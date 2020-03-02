@@ -6,6 +6,9 @@ use Tests\TestCase;
 use Nova\Roles\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
+/**
+ * @see \Nova\Roles\Http\Controllers\RoleController
+ */
 class ManageRolesTest extends TestCase
 {
     use RefreshDatabase;
@@ -25,20 +28,12 @@ class ManageRolesTest extends TestCase
         $this->signInWithPermission('role.create');
 
         $response = $this->get(route('roles.index'));
-
-        $response->assertSuccessful();
+        $response->assertOk();
 
         $response->assertHasProp('roles.can');
         $response->assertHasProp('roles.data');
         $response->assertHasProp('roles.links');
-
-        $response->assertPropCount('roles.data', 3);
-        $response->assertPropValue('roles.data', function ($roles) {
-            $this->assertEquals(
-                ['can', 'id', 'name', 'locked', 'display_name', 'users'],
-                array_keys($roles[0])
-            );
-        });
+        $response->assertHasProp('roles.meta');
     }
 
     /** @test **/
@@ -47,8 +42,7 @@ class ManageRolesTest extends TestCase
         $this->signInWithPermission('role.update');
 
         $response = $this->get(route('roles.index'));
-
-        $response->assertSuccessful();
+        $response->assertOk();
     }
 
     /** @test **/
@@ -57,8 +51,7 @@ class ManageRolesTest extends TestCase
         $this->signInWithPermission('role.delete');
 
         $response = $this->get(route('roles.index'));
-
-        $response->assertSuccessful();
+        $response->assertOk();
     }
 
     /** @test **/
@@ -67,8 +60,7 @@ class ManageRolesTest extends TestCase
         $this->signInWithPermission('role.view');
 
         $response = $this->get(route('roles.index'));
-
-        $response->assertSuccessful();
+        $response->assertOk();
     }
 
     /** @test **/
@@ -76,17 +68,15 @@ class ManageRolesTest extends TestCase
     {
         $this->signIn();
 
-        $response = $this->get(route('roles.index'));
-
+        $response = $this->getJson(route('roles.index'));
         $response->assertForbidden();
     }
 
     /** @test **/
     public function guestCannotManageRoles()
     {
-        $response = $this->get(route('roles.index'));
-
-        $response->assertRedirect(route('login'));
+        $response = $this->getJson(route('roles.index'));
+        $response->assertUnauthorized();
     }
 
     /** @test **/

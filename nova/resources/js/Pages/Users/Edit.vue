@@ -1,172 +1,232 @@
 <template>
-    <sidebar-layout>
+    <admin-layout>
         <page-header :title="user.name">
             <template #pretitle>
                 <inertia-link :href="$route('users.index')">Users</inertia-link>
             </template>
         </page-header>
 
-        <section class="panel">
+        <panel>
             <form
                 :action="$route('users.update', { user })"
                 method="POST"
                 role="form"
+                data-cy="form"
                 @submit.prevent="submit"
             >
                 <csrf-token></csrf-token>
                 <form-method put></form-method>
 
                 <div class="form-section">
-                    <div class="form-section-column-content">
-                        <div class="form-section-header">User Info</div>
-                        <p class="form-section-message mb-6">For privacy reasons, we don't recommend using a user's real name. Instead, you can use a nickname to help protect their identity.</p>
-                        <p class="form-section-message">For security reasons, you cannot specify the password for a user. After the account is created, a password will be generated and emailed to them.</p>
+                    <div class="form-section-header">
+                        <div class="form-section-header-title">User info</div>
+
+                        <p class="form-section-header-message mb-6">For privacy reasons, we don't recommend using a user's real name. Instead, use a nickname to help protect their identity.</p>
+
+                        <p class="form-section-header-message"><strong class="font-semibold">Note:</strong> you cannot manually update a user's password. If the user has forgotten their password, they should reset their password from the sign in page.</p>
                     </div>
 
-                    <div class="form-section-column-form">
+                    <div class="form-section-content">
                         <form-field
                             label="Name"
                             field-id="name"
                             name="name"
                         >
-                            <div class="field-group">
-                                <input
-                                    id="name"
-                                    v-model="form.fields.name"
-                                    type="text"
-                                    name="name"
-                                    class="field"
-                                >
-                            </div>
+                            <input
+                                id="name"
+                                v-model="form.name"
+                                type="text"
+                                name="name"
+                                class="field"
+                                data-cy="name"
+                            >
                         </form-field>
 
                         <form-field
-                            label="Email Address"
+                            label="Email"
                             field-id="email"
                             name="email"
                         >
-                            <div class="field-group">
-                                <input
-                                    id="email"
-                                    v-model="form.fields.email"
-                                    type="email"
-                                    name="email"
-                                    class="field"
+                            <input
+                                id="email"
+                                v-model="form.email"
+                                type="email"
+                                name="email"
+                                class="field"
+                                data-cy="email"
+                            >
+                        </form-field>
+
+                        <form-field
+                            label="Preferred pronouns"
+                            field-id="gender"
+                            name="gender"
+                        >
+                            <template #clean>
+                                <radio-button
+                                    id="male"
+                                    v-model="form.gender"
+                                    native-value="male"
                                 >
-                            </div>
+                                    He/Him
+                                </radio-button>
+                                <radio-button
+                                    id="female"
+                                    v-model="form.gender"
+                                    native-value="female"
+                                    class="mx-6"
+                                >
+                                    She/Her
+                                </radio-button>
+                                <radio-button
+                                    id="neutral"
+                                    v-model="form.gender"
+                                    native-value="neutral"
+                                >
+                                    They/Them
+                                </radio-button>
+                            </template>
                         </form-field>
 
                         <form-field label="Avatar">
-                            <div class="avatar avatar-lg items-center">
-                                <div class="avatar-image">
-                                    <a role="button" class="absolute inset-0 flex justify-center items-center rounded-full duration-150 text-transparent hover:text-gray-100">
-                                        <icon name="edit"></icon>
-                                    </a>
-                                </div>
+                            <template #clean>
+                                <div class="flex items-center">
+                                    <avatar
+                                        v-if="form.avatar === null"
+                                        :image-url="user.avatar_url"
+                                        size="lg"
+                                    ></avatar>
 
-                                <a role="button" class="button button-danger button-small ml-2">
-                                    <icon name="trash" class="mr-2"></icon>
-                                    Remove Image
-                                </a>
-                            </div>
+                                    <img
+                                        v-else
+                                        ref="preview"
+                                        class="avatar avatar-lg"
+                                        data-cy="avatar-preview"
+                                    >
+
+                                    <div class="flex flex-col ml-4">
+                                        <input
+                                            id="image"
+                                            ref="file"
+                                            type="file"
+                                            name="image"
+                                            class="hidden"
+                                            data-cy="upload"
+                                            @change="setAvatar"
+                                        >
+
+                                        <div class="flex items-center">
+                                            <button
+                                                type="button"
+                                                class="button button-soft button-small"
+                                                data-cy="avatar-action-button"
+                                                @click="$refs.file.click()"
+                                            >
+                                                <icon name="camera" class="mr-2"></icon>
+                                                {{ avatarBrowseButtonLabel }}
+                                            </button>
+
+                                            <button
+                                                v-if="showCancelAvatarChangeButton"
+                                                type="button"
+                                                class="text-gray-700 hover:text-gray-800 ml-4"
+                                                @click="cancelAvatarChange"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+
+                                        <checkbox
+                                            v-if="showRemoveOption"
+                                            id="remove-avatar"
+                                            v-model="form.remove_avatar"
+                                            class="mt-2 ml-px"
+                                            :native-value="true"
+                                            data-cy="remove-avatar"
+                                        >
+                                            Remove avatar
+                                        </checkbox>
+                                    </div>
+                                </div>
+                            </template>
                         </form-field>
                     </div>
                 </div>
 
                 <div class="form-section">
-                    <div class="form-section-column-content">
-                        <div class="form-section-header">Roles</div>
-                        <p class="form-section-message mb-6">Roles are made up of the abilities that users can take throughout the system. A user can be assigned as many roles as you'd like to give you more control over the actions your users can take.</p>
+                    <div class="form-section-header">
+                        <div class="form-section-header-title">Roles</div>
+                        <p class="form-section-header-message">Roles are made up of the actions a user can take throughout Nova. A user can be assigned as many roles as you'd like to give you more granular control over the actions they can perform.</p>
 
-                        <inertia-link :href="$route('roles.index')" class="text-primary-600 hover:text-primary-500">
+                        <inertia-link
+                            v-if="user.can.manageRoles"
+                            :href="$route('roles.index')"
+                            class="button button-soft button-sm mt-6"
+                        >
                             Manage roles
                         </inertia-link>
                     </div>
 
-                    <div class="form-section-column-form">
-                        <form-field label="Assign Roles">
-                            <div class="field-group">
-                                <input
-                                    v-model="search"
-                                    type="text"
-                                    class="field"
-                                    placeholder="Find a role..."
-                                >
-
-                                <a
-                                    v-show="search !== ''"
-                                    role="button"
-                                    class="field-addon"
-                                    @click="search = ''"
-                                >
-                                    <icon name="close"></icon>
-                                </a>
-                            </div>
+                    <div class="form-section-content">
+                        <form-field label="Assigned Role(s)">
+                            <template #clean>
+                                <tags-input
+                                    v-model="roles.added"
+                                    not-found-message="Sorry, no roles found with that name."
+                                    placeholder="Add a role..."
+                                    :search-url="$route('roles.search').url()"
+                                    display-property="display_name"
+                                    @add-item="addRole"
+                                    @remove-item="removeRole"
+                                ></tags-input>
+                            </template>
                         </form-field>
-
-                        <toggle-switch v-model="showAssignedRolesOnly" class="mb-4">
-                            Show only assigned roles
-                        </toggle-switch>
-
-                        <div
-                            v-for="(role, index) in filteredRoles"
-                            :key="role.id"
-                            class="flex items-center justify-between w-full p-2 rounded"
-                            :class="{ 'bg-gray-200': index % 2 === 0 }"
-                        >
-                            <div class="text-gray-600">{{ role.title }}</div>
-
-                            <a
-                                v-if="!hasRole(role)"
-                                role="button"
-                                class="text-gray-500 hover:text-gray-600"
-                                @click="addRole(role)"
-                            >
-                                <icon name="add"></icon>
-                            </a>
-
-                            <a
-                                v-if="hasRole(role)"
-                                role="button"
-                                class="text-success-500"
-                                @click="removeRole(role)"
-                            >
-                                <icon name="check-circle"></icon>
-                            </a>
-                        </div>
                     </div>
                 </div>
 
-                <div class="form-controls">
-                    <button type="submit" class="button button-primary">Update</button>
+                <div class="form-footer">
+                    <button type="submit" class="button button-primary">Update User</button>
 
-                    <inertia-link :href="$route('users.index')" class="button is-secondary">
+                    <inertia-link :href="$route('users.index')" class="button">
                         Cancel
                     </inertia-link>
                 </div>
             </form>
-        </section>
+        </panel>
 
-        <section class="panel">
-            <div class="font-semibold text-xl mb-4 text-gray-700">Reset Password</div>
+        <panel class="mt-8">
+            <div class="py-4 px-4 | md:py-6 md:px-6">
+                <div class="font-semibold text-xl mb-4 text-gray-700">Reset Password</div>
 
-            <p class="text-gray-600">If you believe a user should reset their password or they're having issues logging in and are unable to reset their password themselves, you can force a password reset that will take effect next time they attempt to sign in.</p>
+                <p class="text-gray-600">If you believe this user should be forced to reset their password, you can force a password reset that will prompt them to change their password the next time they attempt to sign in.</p>
 
-            <div class="flex justify-end mt-6">
-                <a role="button" class="button is-danger">
-                    Force Password Reset
-                </a>
+                <div class="flex justify-end mt-6">
+                    <button
+                        type="button"
+                        class="button button-primary-soft"
+                        @click.prevent="forcePasswordReset"
+                    >
+                        Force Password Reset
+                    </button>
+                </div>
             </div>
-        </section>
-    </sidebar-layout>
+        </panel>
+    </admin-layout>
 </template>
 
 <script>
-import UserHelpers from './UserHelpers';
-import Form from '@/Utils/Form';
+import findIndex from 'lodash/findIndex';
+import debounce from 'lodash/debounce';
+import axios from '@/Utils/axios';
+import TagsInput from '@/Shared/TagsInput';
+import Avatar from '@/Shared/Avatar';
+import Checkbox from '@/Shared/Forms/Checkbox';
+import RadioButton from '@/Shared/Forms/RadioButton';
 
 export default {
-    mixins: [UserHelpers],
+    components: {
+        TagsInput, Avatar, Checkbox, RadioButton
+    },
 
     props: {
         user: {
@@ -177,38 +237,121 @@ export default {
 
     data () {
         return {
-            form: new Form({
+            form: {
                 name: this.user.name,
                 email: this.user.email,
-                roles: this.user.roles
-            }),
-            search: '',
-            showAssignedRolesOnly: true
+                gender: this.user.gender,
+                avatar: null,
+                remove_avatar: false
+            },
+            roles: {
+                added: this.user.roles,
+                results: [],
+                search: ''
+            }
         };
     },
 
     computed: {
-        filteredRoles () {
-            const roles = (!this.showAssignedRolesOnly)
-                ? this.roles
-                : this.roles.filter(role => this.hasRole(role));
+        avatarBrowseButtonLabel () {
+            if (this.user.has_avatar || this.form.avatar != null) {
+                return 'Change Avatar';
+            }
 
-            return roles.filter((role) => {
-                const searchRegex = new RegExp(this.search, 'i');
+            return 'Add Avatar';
+        },
 
-                return searchRegex.test(role.name) || searchRegex.test(role.title);
-            });
+        formData () {
+            const data = new FormData();
+
+            data.append('name', this.form.name);
+            data.append('email', this.form.email);
+            data.append('gender', this.form.gender);
+            data.append('id', this.user.id);
+            data.append('roles[]', this.roles.added.map(role => role.name));
+            data.append('avatar', this.form.avatar || '');
+            data.append('remove_avatar', this.form.remove_avatar ? '1' : '0');
+            data.append('_method', 'put');
+
+            return data;
+        },
+
+        showCancelAvatarChangeButton () {
+            return this.form.avatar != null;
+        },
+
+        showRemoveOption () {
+            return this.user.has_avatar;
         }
     },
 
-    methods: {
-        submit () {
-            this.form.post({
-                url: this.$route('users.update', { user: this.user }),
-                then: (data) => {
-                    this.$toast.message(`User account for ${data.name} was updated.`).success();
+    watch: {
+        'roles.search': 'searchForRoles'
+    },
 
-                    this.$inertia.replace(this.$route('users.index'));
+    methods: {
+        addRole (role) {
+            this.roles.added.push(role);
+
+            this.roles.results = [];
+        },
+
+        cancelAvatarChange () {
+            this.form.avatar = null;
+            this.$refs.file.value = '';
+        },
+
+        forcePasswordReset () {
+            this.$inertia.put(
+                this.$route('users.force-password-reset', { user: this.user })
+            );
+        },
+
+        removeRole (role) {
+            const index = findIndex(
+                this.roles.added,
+                r => r.name === role.name
+            );
+
+            this.roles.added.splice(index, 1);
+        },
+
+        removeExistingAvatar () {
+            this.cancelAvatarChange();
+
+            if (this.user.has_avatar) {
+                this.form.remove_avatar = true;
+            }
+        },
+
+        searchForRoles: debounce(function () {
+            const route = `${this.$route('roles.search')}?search=${this.roles.search}`;
+
+            axios.get(route).then(({ data }) => {
+                this.roles.results = data;
+            });
+        }, 250),
+
+        setAvatar (e) {
+            this.form.avatar = e.target.files[0];
+
+            const reader = new FileReader();
+
+            reader.onload = (r) => {
+                this.$refs.preview.src = r.target.result;
+            };
+
+            reader.readAsDataURL(this.form.avatar);
+        },
+
+        submit () {
+            this.$inertia.post(
+                this.$route('users.update', { user: this.user }),
+                this.formData
+            ).then(() => {
+                if (Object.keys(this.$page.errors).length === 0) {
+                    this.form.avatar = null;
+                    this.form.remove_avatar = false;
                 }
             });
         }

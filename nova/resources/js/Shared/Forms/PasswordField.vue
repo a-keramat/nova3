@@ -3,23 +3,22 @@
         :label="label"
         :field-id="name"
     >
-        <div class="field-group">
-            <input v-bind="fieldAttributes">
+        <input v-bind="fieldAttributes">
 
-            <a
-                v-if="allowShowingPassword"
-                role="button"
+        <template v-if="allowShowingPassword" #addon-after>
+            <button
+                type="button"
                 class="field-addon"
                 @click="toggleFieldType"
             >
                 <div v-show="showPassword" class="leading-0">
-                    <icon name="hide"></icon>
+                    <icon name="eye-off"></icon>
                 </div>
                 <div v-show="!showPassword" class="leading-0">
-                    <icon name="show"></icon>
+                    <icon name="eye"></icon>
                 </div>
-            </a>
-        </div>
+            </button>
+        </template>
     </form-field>
 </template>
 
@@ -59,7 +58,8 @@ export default {
                 name: this.name,
                 id: this.name,
                 placeholder: this.placeholder,
-                type: this.fieldType
+                type: this.fieldType,
+                'data-cy': this.name
             };
         },
 

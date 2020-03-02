@@ -1,16 +1,17 @@
 <template>
-    <sidebar-layout>
+    <admin-layout>
         <page-header :title="role.display_name">
             <template #pretitle>
                 <inertia-link :href="$route('roles.index')">Roles</inertia-link>
             </template>
         </page-header>
 
-        <section class="panel">
+        <panel>
             <form
                 :action="$route('roles.update', { role })"
                 method="POST"
                 role="form"
+                data-cy="form"
                 @submit.prevent="submit"
             >
                 <csrf-token></csrf-token>
@@ -28,15 +29,14 @@
                             field-id="display_name"
                             name="display_name"
                         >
-                            <div class="field-group">
-                                <input
-                                    id="display_name"
-                                    v-model="form.display_name"
-                                    type="text"
-                                    name="display_name"
-                                    class="field"
-                                >
-                            </div>
+                            <input
+                                id="display_name"
+                                v-model="form.display_name"
+                                type="text"
+                                name="display_name"
+                                class="field"
+                                data-cy="display_name"
+                            >
                         </form-field>
 
                         <form-field
@@ -44,15 +44,18 @@
                             field-id="name"
                             name="name"
                         >
-                            <div class="field-group">
-                                <input
-                                    id="name"
-                                    v-model="form.name"
-                                    type="text"
-                                    name="name"
-                                    class="field"
-                                >
-                            </div>
+                            <input
+                                v-if="!role.locked"
+                                id="name"
+                                v-model="form.name"
+                                type="text"
+                                name="name"
+                                class="field"
+                                data-cy="name"
+                            >
+                            <p v-else class="font-semibold">
+                                {{ role.name }}
+                            </p>
                         </form-field>
                     </div>
                 </div>
@@ -64,16 +67,18 @@
                     </div>
 
                     <div class="form-section-column-form">
-                        <form-field>
-                            <tags-input
-                                v-model="permissions.added"
-                                not-found-message="Sorry, no permissions found with that name."
-                                placeholder="Add a permission..."
-                                :search-url="$route('permissions.search').url()"
-                                display-property="display_name"
-                                @add-item="addPermission"
-                                @remove-item="removePermission"
-                            ></tags-input>
+                        <form-field label="Assigned permissions">
+                            <template #clean>
+                                <tags-input
+                                    v-model="permissions.added"
+                                    not-found-message="Sorry, no permissions found with that name."
+                                    placeholder="Add a permission..."
+                                    :search-url="$route('permissions.search').url()"
+                                    display-property="display_name"
+                                    @add-item="addPermission"
+                                    @remove-item="removePermission"
+                                ></tags-input>
+                            </template>
                         </form-field>
                     </div>
                 </div>
@@ -87,20 +92,23 @@
                     </div>
 
                     <div class="form-section-column-form">
-                        <form-field>
-                            <tags-input
-                                v-model="users.added"
-                                not-found-message="Sorry, no users found with that name or email address."
-                                placeholder="Add a user..."
-                                :search-url="$route('users.search').url()"
-                                @add-item="addUser"
-                                @remove-item="removeUser"
-                            ></tags-input>
+                        <form-field label="Assigned users">
+                            <template #clean>
+                                <tags-input
+                                    v-model="users.added"
+                                    display-property="name"
+                                    not-found-message="Sorry, no users found with that name or email address."
+                                    placeholder="Add a user..."
+                                    :search-url="$route('users.search').url()"
+                                    @add-item="addUser"
+                                    @remove-item="removeUser"
+                                ></tags-input>
+                            </template>
                         </form-field>
                     </div>
                 </div>
 
-                <div class="form-controls">
+                <div class="form-footer">
                     <button type="submit" class="button button-primary">Update Role</button>
 
                     <inertia-link :href="$route('roles.index')" class="button">
@@ -108,8 +116,8 @@
                     </inertia-link>
                 </div>
             </form>
-        </section>
-    </sidebar-layout>
+        </panel>
+    </admin-layout>
 </template>
 
 <script>

@@ -1,49 +1,51 @@
 <template>
-    <base-dropdown
+    <dropdown
         v-model="showResultsPanel"
         placement="bottom-center"
         @keydown.down.prevent="highlightNext"
         @keydown.up.prevent="highlightPrevious"
         @keydown.enter.prevent="addHighlightedItem"
     >
-        <template #dropdown-trigger>
-            <div class="field-group flex-wrap" :class="{ 'py-1': items.length > 0 }">
-                <div
-                    v-for="item in items"
-                    :key="item[keyProperty]"
-                    class="tag mr-2 my-1"
-                >
-                    {{ item[displayProperty] }}
-
-                    <button
-                        class="text-gray-500 ml-1 hover:text-gray-600"
-                        type="button"
-                        @click="removeItem(item)"
-                    >
-                        <icon name="x" class="h-4 w-4"></icon>
-                    </button>
-                </div>
-
-                <input
-                    ref="search"
-                    v-model="searchTerm"
-                    type="text"
-                    class="field placeholder-gray-500"
-                    :placeholder="placeholder"
-                >
+        <div class="field-group flex-wrap" :class="{ 'py-1': items.length > 0 }">
+            <div
+                v-for="item in items"
+                :key="item[keyProperty]"
+                class="badge mr-2 my-1"
+                data-cy="tag-item"
+            >
+                {{ item[displayProperty] }}
 
                 <button
-                    v-if="!!searchTerm"
+                    class="text-gray-500 ml-1 hover:text-gray-600"
                     type="button"
-                    class="field-addon"
-                    @click="resetSearch"
+                    data-cy="remove-tag-item"
+                    @click="removeItem(item)"
                 >
-                    <icon name="close"></icon>
+                    <icon name="x" class="h-4 w-4"></icon>
                 </button>
             </div>
-        </template>
 
-        <template #dropdown-panel>
+            <input
+                ref="search"
+                v-model="searchTerm"
+                type="text"
+                class="field placeholder-gray-500"
+                :placeholder="placeholder"
+                data-cy="tags-search"
+            >
+
+            <button
+                v-if="!!searchTerm"
+                type="button"
+                class="field-addon"
+                data-cy="reset-tags-search"
+                @click="resetSearch"
+            >
+                <icon name="x"></icon>
+            </button>
+        </div>
+
+        <template #dropdown>
             <div v-show="showSearchingScreen" class="flex flex-col items-center py-8 leading-loose text-gray-300">
                 <svg
                     class="block fill-current h-6 leading-none"
@@ -137,12 +139,14 @@
                 <ul
                     ref="items"
                     class="picker-select-items"
+                    data-cy="tags-search-results"
                 >
                     <li
                         v-for="(result, index) in results"
                         :key="result[keyProperty]"
                         class="picker-select-item"
                         :class="{ 'is-active': index === highlightedIndex }"
+                        data-cy="tags-search-results-item"
                         @click="addItem(result)"
                     >
                         {{ result[displayProperty] }}
@@ -154,19 +158,16 @@
                 </div>
             </div>
         </template>
-    </base-dropdown>
+    </dropdown>
 </template>
 
 <script>
 import debounce from 'lodash/debounce';
 import Mousetrap from 'mousetrap';
 import axios from '@/Utils/axios';
-import BaseDropdown from '@/Shared/BaseDropdown';
 
 export default {
     name: 'TagsInput',
-
-    components: { BaseDropdown },
 
     model: {
         prop: 'items',

@@ -8,7 +8,11 @@ use Nova\Roles\Models\Permission;
 use Illuminate\Support\Facades\Event;
 use Nova\Roles\Events\RoleDuplicated;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Nova\Roles\Http\Requests\ValidateDuplicateRole;
 
+/**
+ * @see \Nova\Roles\Http\Controllers\DuplicateRoleController
+ */
 class DuplicateRoleTest extends TestCase
 {
     use RefreshDatabase;
@@ -69,6 +73,21 @@ class DuplicateRoleTest extends TestCase
     }
 
     /** @test **/
+    public function lockedRoleCannotBeDuplicated()
+    {
+        $role = factory(Role::class)->states('locked')->create();
+
+        $this->signInWithPermission(['role.create', 'role.update']);
+
+        $roleCount = Role::count();
+
+        $response = $this->postJson(route('roles.duplicate', $role));
+        $response->assertForbidden();
+
+        $this->assertEquals($roleCount, Role::count());
+    }
+
+    /** @test **/
     public function eventIsDispatchedWhenRoleIsDuplicated()
     {
         Event::fake();
@@ -86,5 +105,14 @@ class DuplicateRoleTest extends TestCase
         Event::assertDispatched(RoleDuplicated::class, function ($event) use ($role, $originalRole) {
             return $event->role->is($role) && $event->originalRole->is($originalRole);
         });
+    }
+
+    /** @test **/
+    public function duplicatingRoleInDatabaseUsesFormRequest()
+    {
+        $this->assertRouteUsesFormRequest(
+            'roles.duplicate',
+            ValidateDuplicateRole::class
+        );
     }
 }

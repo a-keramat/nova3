@@ -1,6 +1,6 @@
 <template>
-    <div class="flex items-center py-1 text-gray-500 transition-all duration-100 focus-within:text-gray-700">
-        <icon name="search" class="mr-2 flex-shrink-0"></icon>
+    <div class="flex items-center py-1 text-gray-500 transition duration-150 focus-within:text-gray-700">
+        <icon name="search" class="mr-3 flex-shrink-0"></icon>
 
         <input
             autocomplete="off"
@@ -9,15 +9,18 @@
             type="text"
             :placeholder="placeholder"
             :value="value"
+            data-cy="search-field"
             @input="$emit('input', $event.target.value)"
         >
 
         <button
             v-show="!!value"
-            class="ml-2 text-gray-500 hover:text-gray-700"
+            id="clear-search"
+            class="ml-2 text-gray-400 hover:text-gray-500 transition ease-in-out duration-150"
+            data-cy="search-clear"
             @click.prevent="$emit('reset')"
         >
-            <icon name="close"></icon>
+            <icon name="x"></icon>
         </button>
     </div>
 </template>

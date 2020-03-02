@@ -3,13 +3,16 @@
 namespace Nova\Roles\Models;
 
 use Nova\Roles\Events;
+use Nova\Users\Models\User;
 use Laratrust\Models\LaratrustRole;
 use Nova\Roles\Models\Builders\RoleBuilder;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Staudenmeir\EloquentEagerLimit\HasEagerLimit;
 
 class Role extends LaratrustRole
 {
     use LogsActivity;
+    use HasEagerLimit;
 
     protected static $logFillable = true;
 
@@ -48,7 +51,22 @@ class Role extends LaratrustRole
      */
     public function getMorphByUserRelation($relationship)
     {
-        return parent::getMorphByUserRelation($relationship)->orderBy('name');
+        return parent::getMorphByUserRelation($relationship)
+            ->orderBy('name');
+    }
+
+    /**
+     * Give the role to a specific user.
+     *
+     * @param  User  $user
+     *
+     * @return Role
+     */
+    public function giveToUser(User $user)
+    {
+        $user->attachRole($this);
+
+        return $this;
     }
 
     /**

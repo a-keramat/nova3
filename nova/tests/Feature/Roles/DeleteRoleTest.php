@@ -8,6 +8,9 @@ use Nova\Roles\Events\RoleDeleted;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
+/**
+ * @see \Nova\Roles\Http\Controllers\RoleController
+ */
 class DeleteRoleTest extends TestCase
 {
     use RefreshDatabase;
@@ -61,7 +64,6 @@ class DeleteRoleTest extends TestCase
         $this->signInWithPermission('role.delete');
 
         $response = $this->delete(route('roles.destroy', $role));
-
         $response->assertForbidden();
 
         $this->assertDatabaseHas('roles', [

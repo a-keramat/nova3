@@ -1,11 +1,25 @@
 <template>
-    <div class="field-wrapper-outer">
-        <div class="field-wrapper-inner" :class="styles.inner">
-            <div v-if="hasLabel" class="field-label">
-                <label :for="fieldId">{{ label }}</label>
+    <div class="field-wrapper" :class="styles.errors">
+        <label
+            class="field-label"
+            :class="{ 'sr-only': !hasLabel }"
+            :for="fieldId"
+        >
+            {{ label }}
+        </label>
+
+        <slot v-if="hasSlot('clean')" name="clean"></slot>
+
+        <div v-else class="field-group">
+            <div v-if="hasSlot('addon-before')" class="field-addon">
+                <slot name="addon-before"></slot>
             </div>
 
             <slot></slot>
+
+            <div v-if="hasSlot('addon-after')" class="field-addon">
+                <slot name="addon-after"></slot>
+            </div>
         </div>
 
         <div
@@ -13,6 +27,7 @@
             class="field-error"
             role="alert"
         >
+            <icon name="alert-circle"></icon>
             {{ errorMessage }}
         </div>
 
@@ -27,10 +42,20 @@
 </template>
 
 <script>
+import get from 'lodash/get';
+import size from 'lodash/size';
+import SlotHelpers from '@/Utils/Mixins/SlotHelpers';
+
 export default {
     name: 'FormField',
 
+    mixins: [SlotHelpers],
+
     props: {
+        error: {
+            type: String,
+            default: ''
+        },
         fieldId: {
             type: String,
             default: ''
@@ -46,43 +71,42 @@ export default {
         name: {
             type: String,
             default: ''
-        },
-        static: {
-            type: Boolean,
-            default: false
         }
     },
 
     computed: {
         errorMessage () {
             if (this.hasError) {
-                return this.$page.errors[this.name][0];
+                if (this.error.length > 0) {
+                    return this.error;
+                }
+
+                return get(this.$page, `errors.${this.name}[0]`, '');
             }
 
             return false;
         },
 
         hasError () {
-            if (this.$page === undefined) {
+            if (this.$page == null && this.error.length === 0) {
                 return false;
             }
 
-            return this.$page.errors[this.name];
+            return this.error.length > 0 || size(this.$page.errors[this.name]) > 0;
         },
 
         hasHelp () {
-            return this.help !== '';
+            return this.help.length > 0;
         },
 
         hasLabel () {
-            return this.label !== '';
+            return this.label.length > 0;
         },
 
         styles () {
             return {
-                inner: {
-                    'has-error': this.hasError,
-                    static: this.static === true
+                errors: {
+                    'has-error': this.hasError
                 }
             };
         }

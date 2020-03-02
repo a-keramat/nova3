@@ -16,6 +16,7 @@ class UserSeeder extends Seeder
         activity()->disableLogging();
 
         $admin = factory(User::class)->create([
+            'name' => 'admin',
             'email' => 'admin@admin.com',
         ]);
 
@@ -24,6 +25,7 @@ class UserSeeder extends Seeder
         $user = factory(User::class)
             ->states('unverified-email')
             ->create([
+                'name' => 'user',
                 'email' => 'user@user.com',
             ]);
 

@@ -2,6 +2,7 @@
 
 namespace Nova\Roles\Http\Resources;
 
+use Nova\Users\Http\Resources\UserResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class RoleResource extends JsonResource
@@ -13,6 +14,7 @@ class RoleResource extends JsonResource
             'can' => [
                 'create' => gate()->allows('create', $this->resource),
                 'delete' => gate()->allows('delete', $this->resource),
+                'duplicate' => gate()->allows('duplicate', $this->resource),
                 'update' => gate()->allows('update', $this->resource),
                 'view' => gate()->allows('view', $this->resource),
             ],
@@ -20,7 +22,8 @@ class RoleResource extends JsonResource
             'name' => $this->name,
             'locked' => (bool) $this->locked,
             'display_name' => $this->display_name,
-            'users' => $this->whenLoaded('users'),
+            'users' => UserResource::collection($this->whenLoaded('users')),
+            'usersCount' => ($this->users_count) ?? $this->users()->count(),
         ];
     }
 }

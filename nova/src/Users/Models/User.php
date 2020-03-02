@@ -12,30 +12,31 @@ use Nova\Users\Models\States\Inactive;
 use Nova\Users\Models\States\UserState;
 use Illuminate\Notifications\Notifiable;
 use Laratrust\Traits\LaratrustUserTrait;
+use Laracasts\Presenter\PresentableTrait;
+use Spatie\MediaLibrary\HasMedia\HasMedia;
 use Nova\Users\Models\Builders\UserBuilder;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Nova\Users\Models\Presenters\UserPresenter;
+use Spatie\MediaLibrary\HasMedia\HasMediaTrait;
+use Staudenmeir\EloquentEagerLimit\HasEagerLimit;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable implements MustVerifyEmail, HasMedia
 {
     use Notifiable;
     use SoftDeletes;
     use LogsActivity;
     use LaratrustUserTrait;
     use HasStates;
+    use HasMediaTrait;
+    use HasEagerLimit;
+    use PresentableTrait;
+
+    public const MEDIA_DIRECTORY = 'users/{model_id}/{media_id}/';
 
     protected static $logFillable = true;
-
-    protected $fillable = [
-        'name', 'email', 'password', 'last_login', 'force_password_reset',
-        'state',
-    ];
-
-    protected $hidden = [
-        'password', 'remember_token', 'force_password_reset',
-    ];
 
     protected $casts = [
         'force_password_reset' => 'boolean',
@@ -51,6 +52,17 @@ class User extends Authenticatable implements MustVerifyEmail
         'deleted' => Events\UserDeleted::class,
     ];
 
+    protected $fillable = [
+        'name', 'email', 'password', 'last_login', 'force_password_reset',
+        'state', 'gender',
+    ];
+
+    protected $hidden = [
+        'password', 'remember_token', 'force_password_reset',
+    ];
+
+    protected $presenter = UserPresenter::class;
+
     /**
      * Record a timestamp when a user logs in.
      *
@@ -64,18 +76,6 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Force the user to reset their password.
-     *
-     * @return \Nova\Users\Models\User
-     */
-    public function forcePasswordReset()
-    {
-        return tap($this, function ($user) {
-            $user->update(['force_password_reset' => true]);
-        });
-    }
-
-    /**
      * Set the description for logging.
      *
      * @param  string  $eventName
@@ -85,6 +85,47 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getDescriptionForEvent(string $eventName): string
     {
         return ":subject.name was {$eventName}";
+    }
+
+    /**
+     * Get the URL of the user's avatar.
+     *
+     * @return string
+     */
+    public function getAvatarUrlAttribute()
+    {
+        return $this->getFirstMediaUrl('avatar');
+    }
+
+    /**
+     * Does the user have an avatar?
+     *
+     * @return bool
+     */
+    public function getHasAvatarAttribute(): bool
+    {
+        return $this->getFirstMedia('avatar') !== null;
+    }
+
+    public function getPronounsAttribute()
+    {
+        switch ($this->gender) {
+            case 'male':
+                return 'He/Him';
+
+            break;
+
+            case 'female':
+                return 'She/Her';
+
+            break;
+
+            case 'neutral':
+            default:
+                return 'They/Them';
+
+            break;
+        }
     }
 
     /**
@@ -111,6 +152,24 @@ class User extends Authenticatable implements MustVerifyEmail
         return new UserBuilder($query);
     }
 
+    /**
+     * Register the media collections for the model.
+     *
+     * @return void
+     */
+    public function registerMediaCollections()
+    {
+        $this->addMediaCollection('avatar')
+            ->useFallbackUrl("https://api.adorable.io/avatars/285/{$this->email}")
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif'])
+            ->singleFile();
+    }
+
+    /**
+     * Register the states and transitions for the model.
+     *
+     * @return void
+     */
     protected function registerStates(): void
     {
         $this->addState('state', UserState::class)
